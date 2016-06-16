@@ -405,7 +405,8 @@ public class Graph {
     public boolean genFormatDotFile(String filename) {
         try {
             PrintStream ps = new PrintStream(new FileOutputStream(filename));
-            ps.print(format());
+            String output = format().toString();
+            ps.print(output.replaceAll("(\\w+)=(\\d\\.\\d+)", "$1=\"$2\""));
             ps.close();
         } catch (Exception e) {
             System.err.println("Graph.formatDotFile: " + e);
