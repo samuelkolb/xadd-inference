@@ -8,7 +8,7 @@ import org.junit.Test;
 import sve.GraphicalModel;
 import sve.Query;
 import sve.SVE;
-import xaddorig.XADD;
+import xadd.XADD;
 //import xadd.XADD;
 
 /**

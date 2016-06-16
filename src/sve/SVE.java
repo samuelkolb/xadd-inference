@@ -21,9 +21,9 @@ import java.util.Iterator;
 import sve.GraphicalModel.Factor;
 
 import camdp.HierarchicalParser;
-import xaddorig.XADD;
-import xaddorig.XADDUtils;
-import xaddorig.XADD.*;
+import xadd.XADD;
+import xadd.XADDUtils;
+import xadd.ExprLib.*;
 
 public class SVE {
 

@@ -11,8 +11,8 @@ import java.util.*;
 
 import camdp.HierarchicalParser;
 
-import xaddorig.XADD;
-import xaddorig.XADD.*;
+import xadd.XADD;
+import xadd.ExprLib.*;
 
 public class GraphicalModel {
 
