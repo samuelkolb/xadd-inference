@@ -21,6 +21,8 @@ import java.util.PriorityQueue;
 import lpsolve.LP;
 import lpsolve.LpSolve;
 
+import solving.GLPKSolver;
+import solving.LPSolver;
 import util.IntPair;
 import xadd.LinearXADDMethod;
 import xadd.XADD.ExprDec;
@@ -280,7 +282,12 @@ public class LinearApproximationMethod extends LinearXADDMethod {
             upBound[i] = XADD.DEFAULT_UPPER_BOUND;
             loBound[i] = XADD.DEFAULT_LOWER_BOUND;
         }
-        LP lp = new LP(linVars, loBound, upBound, obj_coef, LP.MINIMIZE);
+        //LP lp = new LP(linVars, loBound, upBound, obj_coef, LP.MINIMIZE);
+        LPSolver solver = new GLPKSolver();
+        solver.minimize();
+        solver.setLowerBound(loBound);
+        solver.setUpperBound(upBound);
+        solver.setObjective(obj_coef);
 
         //add all points as constraints
         double coefConj[][] = new double[2][];
@@ -305,7 +312,8 @@ public class LinearApproximationMethod extends LinearXADDMethod {
                     constr_coef[i + 2] = p_i;
                     rhs += coefConj[leafFun][i] * p_i;
                 }
-                lp.addGeqConstraint(constr_coef, rhs);
+                solver.addGreaterThanConstraint(constr_coef, rhs);
+                //lp.addGeqConstraint(constr_coef, rhs);
             }
             //min => (e > (f* - fi) => e - f* > -fi constraint
             for (PointKey pk : (points.get(j + nPaths))) {
@@ -318,26 +326,28 @@ public class LinearApproximationMethod extends LinearXADDMethod {
                     constr_coef[i + 2] = -p_i;
                     rhs += -1 * (coefConj[leafFun][i] * p_i);
                 }
-                lp.addGeqConstraint(constr_coef, rhs);
+                solver.addGreaterThanConstraint(constr_coef, rhs);
+                //lp.addGeqConstraint(constr_coef, rhs);
             }
         }
 
-        double[] soln = silentSolvelp(lp);
-        double opt_val = lp._dObjValue;
+        LPSolver.Result result = solver.solve();
+        double[] soln = result.getVariables(); //silentSolvelp(lp);
+        double opt_val = result.getValue(); //lp._dObjValue;
 
-        if (lp._status == LpSolve.INFEASIBLE) {
+        if (result.isInfeasible()) {
             System.out.println("Optimization BestLin Error: Infeasible Min!");
         }
-        if (lp._status == LpSolve.UNBOUNDED) {
+        if (result.isUnbounded()) {
         	if (REPORT_UNBOUNDED){
         		System.out.println("Optimization BestLin Error: Unbounded Min!");
         	}
             opt_val = Double.POSITIVE_INFINITY;
         }
-        if (PRUNE_UNION_DBG) {
+        /*if (PRUNE_UNION_DBG) {
             System.out.println("Minimizing optimal Error: " + (opt_val) + " with function " + LP.PrintVector(lp._x));
-        }
-        lp.free();
+        }*/ // TODO Removed without replacement
+        // lp.free();
         return new OptimResult(opt_val, soln);
     }
 
@@ -357,7 +367,12 @@ public class LinearApproximationMethod extends LinearXADDMethod {
             upBound[i] = XADD.DEFAULT_UPPER_BOUND;
             loBound[i] = XADD.DEFAULT_LOWER_BOUND;
         }
-        LP lp = new LP(linVars, loBound, upBound, obj_coef, LP.MINIMIZE);
+        //LP lp = new LP(linVars, loBound, upBound, obj_coef, LP.MINIMIZE);
+        LPSolver solver = new GLPKSolver();
+        solver.minimize();
+        solver.setLowerBound(loBound);
+        solver.setUpperBound(upBound);
+        solver.setObjective(obj_coef);
 
         //add all points as constraints
         double coefConj[][] = new double[2][];
@@ -383,7 +398,8 @@ public class LinearApproximationMethod extends LinearXADDMethod {
                     constr_coef[i + 2] = p_i;
                     rhs += coefConj[leafFun][i] * p_i;
                 }
-                lp.addGeqConstraint(constr_coef, rhs);
+                solver.addGreaterThanConstraint(constr_coef, rhs);
+                //lp.addGeqConstraint(constr_coef, rhs);
             }
             //min => (e > (f* - fi) => e - f* > -fi constraint
             for (PointKey pk : (points.get(j + nPaths))) {
@@ -396,26 +412,28 @@ public class LinearApproximationMethod extends LinearXADDMethod {
                     constr_coef[i + 2] = -p_i;
                     rhs += -1 * (coefConj[leafFun][i] * p_i);
                 }
-                lp.addGeqConstraint(constr_coef, rhs);
+                //lp.addGeqConstraint(constr_coef, rhs);
+                solver.addGreaterThanConstraint(constr_coef, rhs);
             }
         }
 
-        double[] soln = silentSolvelp(lp);
-        double opt_val = lp._dObjValue;
+        LPSolver.Result result = solver.solve();
+        double[] soln = result.getVariables(); //silentSolvelp(lp);
+        double opt_val = result.getValue();
 
-        if (lp._status == LpSolve.INFEASIBLE) {
+        if (result.isInfeasible()) {
             System.out.println("Optimization UpperLin Error: Infeasible Min!");
         }
-        if (lp._status == LpSolve.UNBOUNDED) {
+        if (result.isUnbounded()) {
         	if (REPORT_UNBOUNDED){
         		System.out.println("Optimization UpperLin Error: Unbounded Min!");
         		opt_val = Double.POSITIVE_INFINITY;
         	}
         }
-        if (PRUNE_UNION_DBG) {
+        /*if (PRUNE_UNION_DBG) {
             System.out.println("Minimizing optimal Error: " + (opt_val) + " with function " + LP.PrintVector(lp._x));
-        }
-        lp.free();
+        }*/ // TODO Removed without replacement
+        //lp.free();
         return new OptimResult(opt_val, soln);
     }
     
@@ -470,8 +488,12 @@ public class LinearApproximationMethod extends LinearXADDMethod {
             loBound[bound_i] = 0d;
         }
 
-        LP lp = new LP(linVars, loBound, upBound, obj_coef, LP.MINIMIZE);
-
+        //LP lp = new LP(linVars, loBound, upBound, obj_coef, LP.MINIMIZE);
+        LPSolver solver = new GLPKSolver();
+        solver.minimize();
+        solver.setLowerBound(loBound);
+        solver.setUpperBound(upBound);
+        solver.setObjective(obj_coef);
 
         //add all points as constraints
 
@@ -503,7 +525,8 @@ public class LinearApproximationMethod extends LinearXADDMethod {
                 //eVar < #limit
                 for (int i = 0; i < linVars; i++) temp_constr_coef[i] = 0;
                 temp_constr_coef[errorVarID] = 1;
-                lp.addLeqConstraint(temp_constr_coef, errorLimit);
+                //lp.addLeqConstraint(temp_constr_coef, errorLimit);
+                solver.addSmallerThanConstraint(temp_constr_coef, errorLimit);
 
                 //eVar > (fi-f*)(p) => eVar + f*(p) > fi(p)
                 //temp_constr is currently 1 on errorVar and 0 elsewhere, as wanted
@@ -519,7 +542,8 @@ public class LinearApproximationMethod extends LinearXADDMethod {
                     rhs += coefConj[leafFun][i] * p_i; //calculate fi(p)
                 }
                 fValues[errorVarID] = rhs;
-                lp.addGeqConstraint(temp_constr_coef, rhs);
+                //lp.addGeqConstraint(temp_constr_coef, rhs);
+                solver.addGreaterThanConstraint(temp_constr_coef, rhs);
 
                 //eVar > -(fi-f*)(p) => eVar - f*(p) > -fi(p)
                 //temp_constr is currently 1 on errorVar and 0 on all other errorVars, as wanted
@@ -533,23 +557,25 @@ public class LinearApproximationMethod extends LinearXADDMethod {
                     temp_constr_coef[i + 1] = -p_i; // coef of -f*(p)
                     rhs += -1 * coefConj[leafFun][i] * p_i; //calculate -fi(p)
                 }
-                lp.addGeqConstraint(temp_constr_coef, rhs);
+                //lp.addGeqConstraint(temp_constr_coef, rhs);
+                solver.addGreaterThanConstraint(temp_constr_coef, rhs);
 
                 //go to next point
                 errorVarID++;
             }
         }
 
-        double[] soln = silentSolvelp(lp);
-        double opt_val = lp._dObjValue;
+        LPSolver.Result result = solver.solve();
+        double[] soln = result.getVariables(); //silentSolvelp(lp);
+        double opt_val = result.getValue(); //lp._dObjValue;
 
-        if (lp._status == LpSolve.INFEASIBLE) {
+        if (result.isInfeasible()) {
             System.err.println("Optimization MinimSumError Error: Infeasible Min!");
             System.err.println("Minimizing sum Errors: previous optimal Error: " + errorLimit);
             System.err.println("Minimizing sum Errors: previous fValues:" + LP.PrintVector(fValues));
             return null;
         }
-        if (lp._status == LpSolve.UNBOUNDED) {
+        if (result.isUnbounded()) {
             System.err.println("Optimization MinimSumError Error: Unbounded Min!");
             opt_val = Double.NEGATIVE_INFINITY;
             return null;
@@ -558,7 +584,7 @@ public class LinearApproximationMethod extends LinearXADDMethod {
             System.out.println("Minimizing sum Errors: optimal Error: " + (opt_val) + " with function " + LP.PrintVector(soln));
             System.out.println("Minimizing sum Errors: fvalues:" + LP.PrintVector(fValues));
         }
-        lp.free();
+        //lp.free();
         return new OptimResult(opt_val, soln);
     }
 
@@ -1037,11 +1063,13 @@ public class LinearApproximationMethod extends LinearXADDMethod {
             return ret;
         }
 
+        @Override
         public int hashCode() {
             //System.out.println("Using hashcode: "+_hashcode);
             return _hashcode;
         }
 
+        @Override
         public boolean equals(Object o2) {
             if (o2 instanceof PointKey) {
                 PointKey pk2 = (PointKey) o2;
@@ -1059,6 +1087,7 @@ public class LinearApproximationMethod extends LinearXADDMethod {
 
     //Priority Queue Comparator
     public class IntPair12Comparator implements Comparator<IntPair> {
+        @Override
         public int compare(IntPair x, IntPair y) {
             if (x._i1 < y._i1) return -1;
             if (x._i1 > y._i1) return 1;

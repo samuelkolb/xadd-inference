@@ -20,6 +20,8 @@ import logic.kb.prop.PropKbCNF;
 import lpsolve.LP;
 import lpsolve.LpSolve;
 
+import solving.GLPKSolver;
+import solving.LPSolver;
 import util.MapList;
 import xadd.ExprLib.ArithExpr;
 import xadd.XADD.BoolDec;
@@ -474,24 +476,30 @@ public class ReduceLPContext {
             int nvars = nLocalCVars;
             double[] obj_coef = new double[nvars]; // default all zeros, which is
             // what we want
-            LP lp = new LP(nvars, assign2Local(context.lowerBounds, true), assign2Local(context.upperBounds, true), obj_coef, LP.MAXIMIZE);
+            LPSolver solver = new GLPKSolver();
+            solver.maximize();
+            solver.setObjective(obj_coef, 0);
+            solver.setLowerBound(assign2Local(context.lowerBounds, true));
+            solver.setUpperBound(assign2Local(context.upperBounds, true));
+            //LP lp = new LP(nvars, assign2Local(context.lowerBounds, true), assign2Local(context.upperBounds, true), obj_coef, LP.MAXIMIZE);
 
             // Now add all constraints
             for (Integer constraint_id : test_var) {
-                addConstraint(lp, constraint_id, test_dec.get(constraint_id));
+                addConstraint(solver, constraint_id, test_dec.get(constraint_id));
             }
 
             // Finally add the negated decision to test
-            addConstraint(lp, var_id, !dec);
-            addLocalBoundConstraints(lp);
+            addConstraint(solver, var_id, !dec);
+            addLocalBoundConstraints(solver);
             // Solve and get decision
-            silentSolvelp(lp);
+            LPSolver.Result result = solver.solve();
+            //silentSolvelp(lp);
 
 
-            boolean implied = (lp._status == LpSolve.INFEASIBLE);
-            if (DEBUG_CONSTRAINTS)
+            boolean implied = (result.isInfeasible());
+            /*if (DEBUG_CONSTRAINTS)
                 System.out.println("Solution: " + LP.PrintVector(lp._x));
-            lp.free();
+            lp.free();*/ // TODO Removed without replacement
 
             // Since dec inverted, infeasibility implies that the implication is
             // true
@@ -653,23 +661,29 @@ public class ReduceLPContext {
 
             // Setup LP
             for (int i = 0; i < nvars; i++) obj_coef[i] = 1;
-            LP lp = new LP(nvars, assign2Local(context.lowerBounds, true), assign2Local(context.upperBounds, true), obj_coef, LP.MAXIMIZE);
+            LPSolver solver = new GLPKSolver();
+            solver.maximize();
+            solver.setObjective(obj_coef, 0);
+            solver.setLowerBound(assign2Local(context.lowerBounds, true));
+            solver.setUpperBound(assign2Local(context.upperBounds, true));
+
+            //LP lp = new LP(nvars, assign2Local(context.lowerBounds, true), assign2Local(context.upperBounds, true), obj_coef, LP.MAXIMIZE);
             // Now add all constraints
             for (Integer decision : test_dec) {
-                addDecision(lp, decision);
+                addDecision(solver, decision);
             }
             //Adding box constraints
-            addLocalBoundConstraints(lp);
+            addLocalBoundConstraints(solver);
+            LPSolver.Result result = solver.solve();
+            double soln[] = result.getVariables(); //silentSolvelp(lp);
 
-            double soln[] = silentSolvelp(lp);
-
-            if (lp._status == LpSolve.INFEASIBLE) {
+            if (result.isInfeasible()) {
                 if (DEBUG_CONSTRAINTS) {
                     System.out.println("Infeasible: " + test_dec);
                 }
                 infeasible = true;
             }
-            lp.free();
+            //lp.free();
 
             if (infeasible || SKIP_TEST2) return infeasible;
 
@@ -690,7 +704,12 @@ public class ReduceLPContext {
             lower2[nvars] = 0; //S >0
             upper2[nvars] = XADD.DEFAULT_UPPER_BOUND;
 
-            LP lp2 = new LP(nvars + 1, lower2, upper2, objCoef2, LP.MAXIMIZE);
+            //LP lp2 = new LP(nvars + 1, lower2, upper2, objCoef2, LP.MAXIMIZE);
+            LPSolver solver2 = new GLPKSolver();
+            solver2.maximize();
+            solver2.setLowerBound(lower2);
+            solver2.setUpperBound(upper2);
+            solver2.setObjective(objCoef2, 0);
 
             double constrCoef2[] = new double[nvars + 1];
             double constC = 0d;
@@ -705,25 +724,28 @@ public class ReduceLPContext {
                 constC = setCoefficientsLocal(exp, constrCoef2);
                 if ( (greaterComp && decision > 0) || (!greaterComp && decision < 0) ) {
                     constrCoef2[nvars] = -1; // c + f*x > 0 => f*x - S > -c
-                    lp2.addGeqConstraint(constrCoef2, -constC);
+                    solver2.addGreaterThanConstraint(constrCoef2, -constC);
+                    //lp2.addGeqConstraint(constrCoef2, -constC);
                 } else {
                     constrCoef2[nvars] = 1; // c + f*x < 0 => f*x + S < -c
-                    lp2.addLeqConstraint(constrCoef2, -constC);
+                    solver2.addSmallerThanConstraint(constrCoef2, -constC);
+                    //lp2.addLeqConstraint(constrCoef2, -constC);
                 }
             }
 
             double soln2[] = new double[nvars + 1];
-            soln2 = silentSolvelp(lp2);
-            double maxSlack = lp2._dObjValue;
+            LPSolver.Result result2 = solver2.solve();
+            soln2 = result2.getVariables(); //silentSolvelp(lp2);
+            double maxSlack = result2.getValue(); //lp2._dObjValue;
 
             
-            if (lp2._status == LpSolve.INFEASIBLE) {
+            if (result2.isInfeasible()) {
                 if (!TEST2_INCONSIST_QUIET){
                 	System.err.println("Infeasible at test 2? should have failed the first test!");
                 	showDecListEval(test_dec, soln);
                 }
                 infeasible = true;
-            } else if (lp2._status != LpSolve.UNBOUNDED && maxSlack < IMPLIED_PRECISION_T2) {
+            } else if (!result2.isUnbounded() && maxSlack < IMPLIED_PRECISION_T2) {
                 if (DEBUG_CONSTRAINTS) {
                     System.out.println("Implied only by test 2: Slack = " + soln2[nvars]);
                     //remove slack from soln2 to be a local assign sol
@@ -733,7 +755,7 @@ public class ReduceLPContext {
                 }
                 infeasible = true;
             }
-            lp2.free();
+            //lp2.free();
             return infeasible;
         }
     }

@@ -13,7 +13,7 @@ binary classification is given in the last section. Note that the
 notation style used herein is very similar to that used in
 \cite{bishop06}, and although aiming to be as self contained as
 possible, this thesis assumes certain knowledge of statistics, linear
-algebra and calculus, which are very well summarized in Chapter 2 of
+solving and calculus, which are very well summarized in Chapter 2 of
 \cite{bishop06} and Appendices A -- C of \cite{boyd04}.
 
 
@@ -273,7 +273,7 @@ We have discussed in Subsection \ref{ssec:01loss}, that scaling $\w$ to $\epsilo
 & \w^* = \arg \max_{\w} \{ \frac{1}{\|\w\|} \} \quad s.t. \quad \;t_i\w^T \xi \geq 1 \quad \forall i = 1, 2, \dots, N \\
 \Leftrightarrow \quad &  \w^* = \arg \min_{\w} \{ \frac{1}{2}\|\w\|^2 \} \quad s.t. \quad \;t_i\w^T \xi \geq 1 \quad \forall i = 1, 2, \dots, N.
 \end{split} \] 
-This is a quadratic programming problem: minimize a quadratic function subject to linear constraints, and can be efficiently solved using the method of Lagrange multipliers with the KarushÐKuhnÐTucker (KKT) conditions \cite{Kuhn}. 
+This is a quadratic programming problem: minimize a quadratic function subject to linear constraints, and can be efficiently solved using the method of Lagrange multipliers with the Karushï¿½Kuhnï¿½Tucker (KKT) conditions \cite{Kuhn}. 
 
 Now, for the case when the two classes are not linearly separable, hinge loss is used to penalize data points that are on the `wrong side' of the decision boundary as follows:
 $$L_{hinge}(m_i) 

@@ -11,15 +11,18 @@
 
 package xadd;
 
-import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 
+import diagram.Assignment;
 import lpsolve.LP;
 import lpsolve.LpSolve;
 
-import util.DevNullPrintStream;
+import solving.GLPKSolver;
+import solving.LPSolver;
+import solving.Solver;
 import xadd.ExprLib.ArithExpr;
 import xadd.ExprLib.ArithOperation;
 import xadd.ExprLib.CompOperation;
@@ -110,14 +113,14 @@ public class LinearXADDMethod {
     }
 
     // Lp usage methods
-    protected void addDecision(LP lp, int dec) {
+    protected void addDecision(LPSolver solver, int dec) {
         if (dec > 0)
-            addConstraint(lp, dec, true);
+            addConstraint(solver, dec, true);
         else
-            addConstraint(lp, -dec, false);
+            addConstraint(solver, -dec, false);
     }
 
-    protected void addConstraint(LP lp, int constraint_id, boolean dec) {
+    protected void addConstraint(LPSolver solver, int constraint_id, boolean dec) {
 
 //	      if (DEBUG_CONSTRAINTS)
 //	          System.out.println("Adding constraint id [" + constraint_id+ "] = " + dec);
@@ -152,19 +155,26 @@ public class LinearXADDMethod {
 
             switch (type) {
                 case GT:
-                    lp.addGTConstraint(coefs, -const_coef);
+                    solver.addGreaterThanConstraint(coefs, -const_coef);
+                    // TODO relaxation
+                    // lp.addGTConstraint(coefs, -const_coef);
                     break;
                 case GT_EQ:
-                    lp.addGeqConstraint(coefs, -const_coef);
+                    solver.addGreaterThanConstraint(coefs, -const_coef);
+                    // lp.addGeqConstraint(coefs, -const_coef);
                     break;
                 case LT:
-                    lp.addLTConstraint(coefs, -const_coef);
+                    solver.addSmallerThanConstraint(coefs, -const_coef);
+                    // TODO relaxation
+                    //lp.addLTConstraint(coefs, -const_coef);
                     break;
                 case LT_EQ:
-                    lp.addLeqConstraint(coefs, -const_coef);
+                    solver.addSmallerThanConstraint(coefs, -const_coef);
+                    //lp.addLeqConstraint(coefs, -const_coef);
                     break;
                 case EQ:
-                    lp.addEqConstraint(coefs, -const_coef);
+                    solver.addEqualConstraint(coefs, -const_coef);
+                    //lp.addEqConstraint(coefs, -const_coef);
                     break;
                 case NEQ:
                     break; // Can't add an NEQ constraint
@@ -175,7 +185,7 @@ public class LinearXADDMethod {
     }
 
     @SuppressWarnings("unused")
-    protected void addLocalBoundConstraints(LP lp) {
+    protected void addLocalBoundConstraints(LPSolver solver) {
         if (!ADD_EXPLICIT_BOUND_CONSTRAINTS_TO_LP) return;
         int nvars = nLocalCVars;
         double var[] = new double[nvars];
@@ -187,19 +197,19 @@ public class LinearXADDMethod {
         }
         for (int i = 0; i < nvars; i++) {
             var[i] = 1;
-            lp.addGeqConstraint(var, lb[i]);
-            lp.addLeqConstraint(var, ub[i]);
+            solver.addGreaterThanConstraint(var, lb[i]);
+            solver.addSmallerThanConstraint(var, ub[i]);
+            //lp.addGeqConstraint(var, lb[i]);
+            //lp.addLeqConstraint(var, ub[i]);
             var[i] = 0;
         }
     }
 
-    protected double[] silentSolvelp(LP lp) {
+    protected Assignment.Valued<Double> silentSolvelp(Solver<Assignment.Valued<Double>> solver) {
         //Debuging Streams
         //PrintStream ignoreStream = new DevNullPrintStream(); //used to ignore lpSolve output
         //PrintStream outStream=System.out;
-
-        double[] soln = lp.solve();
-        return soln;
+        return solver.solve();
     }
 
     // Convert an expression to an array of coefficients and a constant
@@ -370,32 +380,54 @@ public class LinearXADDMethod {
 
     protected OptimResult restrictedMax(double f[], double c, HashSet<Integer> domain, boolean isMax) {
         int nvars = nLocalCVars;
-        LP lp = new LP(nvars, assign2Local(context.lowerBounds, true), assign2Local(context.upperBounds, true), f, isMax ? LP.MAXIMIZE : LP.MINIMIZE);
-        //Now add all constraints
-        for (Integer decision : domain) {
-            addDecision(lp, decision);
+        LPSolver solver = new GLPKSolver();
+        if(isMax) {
+            solver.maximize();
+        } else {
+            solver.minimize();
         }
-        addLocalBoundConstraints(lp);
+        solver.setObjective(f, 0);
+        // TODO bounds
+        //LP lpNO = new LP(nvars, assign2Local(context.lowerBounds, true), assign2Local(context.upperBounds, true), f, isMax ? LP.MAXIMIZE : LP.MINIMIZE);
+        //Now add all constraints
+
+        double[] lb = assign2Local(context.lowerBounds, true);
+        solver.setLowerBound(lb);
+
+        double[] ub = assign2Local(context.upperBounds, true);
+        solver.setUpperBound(ub);
+
+        for (Integer decision : domain) {
+            addDecision(solver, decision);
+        }
+
+        addLocalBoundConstraints(solver);
 
         // Solve and get decision
-        double[] soln = silentSolvelp(lp);
-        double opt_val = lp._dObjValue;
+        LPSolver.Result result = solver.solve();
+        double[] soln = result.getVariables();
+        double opt_val = result.getValue();
 
-        if (lp._status == LpSolve.INFEASIBLE) {
-        	if (WARN_INFEASIBLE_REGIONS) {
-        		System.err.println("Warning: Infeasible region found maximizing linear XADD.");
-		        System.err.println("Decisions: "+domain);
-		        showDecList(domain);
-        	}
+        System.out.println(Arrays.toString(soln));
+        System.out.println(opt_val);
+
+        //if (lp._status == LpSolve.INFEASIBLE) {
+        if (result.isInfeasible()) {
+            if (WARN_INFEASIBLE_REGIONS) {
+                System.err.println("Warning: Infeasible region found maximizing linear XADD.");
+                System.err.println("Decisions: "+domain);
+                showDecList(domain);
+            }
             opt_val = isMax? Double.NEGATIVE_INFINITY: Double.POSITIVE_INFINITY;
         }
-        if (lp._status == LpSolve.UNBOUNDED) {
+        //if (lp._status == LpSolve.UNBOUNDED) {
+        if (result.isUnbounded()) {
             if (WARN_INFEASIBLE_REGIONS) System.err.println("Warning: Unbounded region found maximizing linear XADD.");
 //          System.err.println("Decisions: "+domain);
 //          showDecList(domain);
             opt_val = isMax? Double.POSITIVE_INFINITY: Double.NEGATIVE_INFINITY;
         }
-        lp.free();
+        //lp.free();
         return new OptimResult(opt_val + c, soln);
     }
 
