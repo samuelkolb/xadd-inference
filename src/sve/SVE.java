@@ -376,9 +376,9 @@ public class SVE {
         // Query q = new Query("./src/sve/test.query");
         // Factor result = sve.infer(q);
 
-//        TestLocalization();
-//		TestRadar();
-      TestTracking();
+        // TestLocalization();
+		TestRadar();
+      // TestTracking();
     }
 
     public static void TestLocalization() {
@@ -408,14 +408,16 @@ public class SVE {
         // Query q = new Query("./src/sve/radar.query.1");
         // gm.instantiateGMTemplate(q._hmVar2Expansion);
         // System.out.println(gm);
-        
+
+        double time = System.currentTimeMillis();
         Query q1 = new Query("./src/sve/radar.query.5");
         Factor result1 = sve.infer(q1, CreateRadarVariableOrder(q1));
 
         Query q2 = new Query("./src/sve/radar.query.4");
         Factor result2 = sve.infer(q2, CreateRadarVariableOrder(q2));
+        System.out.println("Took " + (time / 1000) + "s");
 
-        if (true) {
+        if (false) {
             sve.Export3DData(result2, result1, "./src/sve/radar.query.6");
         }
     }
@@ -441,13 +443,16 @@ public class SVE {
 
     public static void TestTracking() {
 
-        GraphicalModel gm = new GraphicalModel("./src/sve/tracking_hadi.gm");
+        //GraphicalModel gm = new GraphicalModel("./src/sve/tracking_hadi.gm");
+        GraphicalModel gm = new GraphicalModel("./src/sve/tracking.gm");
         SVE sve = new SVE(gm);
 
-        Query q1 = new Query("./src/sve/tracking.query.100");
+        Query q1 = new Query("./src/sve/tracking.query.6");
+        double time = System.currentTimeMillis();
         Factor result1 = sve.infer(q1, new ArrayList<String>(Arrays.asList("d", "x_1", "x_2")));
+        System.out.println("Took " + (time / 1000) + "s");
 //        XADDUtils.PlotXADD(_context, factor.getNodeId(), min_val, 0.1d, max_val, var.getName(), title);
-        Visualize1DFactor(result1, "tracking");
+        // Visualize1DFactor(result1, "tracking");
 
     }
 }

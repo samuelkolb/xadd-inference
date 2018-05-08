@@ -10,25 +10,15 @@
 
 package xadd;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.PriorityQueue;
-
 import lpsolve.LP;
-import lpsolve.LpSolve;
-
-import solving.GLPKSolver;
 import solving.LPSolver;
 import util.IntPair;
-import xadd.LinearXADDMethod;
 import xadd.XADD.ExprDec;
 import xadd.XADD.XADDINode;
 import xadd.XADD.XADDNode;
 import xadd.XADD.XADDTNode;
+
+import java.util.*;
 
 public class LinearApproximationMethod extends LinearXADDMethod {
 
@@ -283,7 +273,7 @@ public class LinearApproximationMethod extends LinearXADDMethod {
             loBound[i] = XADD.DEFAULT_LOWER_BOUND;
         }
         //LP lp = new LP(linVars, loBound, upBound, obj_coef, LP.MINIMIZE);
-        LPSolver solver = new GLPKSolver();
+        LPSolver solver = LPSolver.getDefault();
         solver.minimize();
         solver.setLowerBound(loBound);
         solver.setUpperBound(upBound);
@@ -368,7 +358,7 @@ public class LinearApproximationMethod extends LinearXADDMethod {
             loBound[i] = XADD.DEFAULT_LOWER_BOUND;
         }
         //LP lp = new LP(linVars, loBound, upBound, obj_coef, LP.MINIMIZE);
-        LPSolver solver = new GLPKSolver();
+        LPSolver solver = LPSolver.getDefault();
         solver.minimize();
         solver.setLowerBound(loBound);
         solver.setUpperBound(upBound);
@@ -489,7 +479,7 @@ public class LinearApproximationMethod extends LinearXADDMethod {
         }
 
         //LP lp = new LP(linVars, loBound, upBound, obj_coef, LP.MINIMIZE);
-        LPSolver solver = new GLPKSolver();
+        LPSolver solver = LPSolver.getDefault();
         solver.minimize();
         solver.setLowerBound(loBound);
         solver.setUpperBound(upBound);

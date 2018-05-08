@@ -44,7 +44,7 @@ public abstract class CAMDPsolver {
     public boolean COMPARE_OPTIMAL = false;
     
     /* DEBUG PARAMETER */
-    protected static int DEBUG_DEPTH = 0;
+    protected static int DEBUG_DEPTH = 5;
     protected static PrintStream debugOutput = System.out;
     private static boolean PLOT_DD = false;
     private static boolean PRINT_DD = false;

@@ -49,6 +49,28 @@ public class XADDBuild {
 	}
 
 	/**
+	 * Builds a diagram that adds the given test and the two corresponding branches.
+	 * @param test	The test
+	 * @param then	The true branch
+	 * @param otherwise	The false branch
+	 * @return	The resulting diagram
+	 */
+	public static XADDiagram ifThenElse(String test, XADDiagram then, XADDiagram otherwise) {
+		return test(test).assignWeights(then, otherwise);
+	}
+
+	/**
+	 * Builds a diagram that adds the given test and the two corresponding branches.
+	 * @param test	The test
+	 * @param then	The true branch
+	 * @param otherwise	The false branch
+	 * @return	The resulting diagram
+	 */
+	public static BoolXADD ifThenElse(String test, BoolXADD then, BoolXADD otherwise) {
+		return BoolXADD.convert(test(test).assignWeights(then, otherwise), false);
+	}
+
+	/**
 	 * Build a case wise defined XADD
 	 * @param caseMap	Mapping from mutually exclusive cases to values
 	 * @return	The combined XADD

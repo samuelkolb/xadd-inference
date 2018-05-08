@@ -1,7 +1,5 @@
 package solving;
 
-import function.Architect;
-import scpsolver.constraints.Constraint;
 import scpsolver.constraints.LinearBiggerThanEqualsConstraint;
 import scpsolver.constraints.LinearConstraint;
 import scpsolver.constraints.LinearEqualsConstraint;
@@ -11,8 +9,9 @@ import scpsolver.lpsolver.SolverFactory;
 import scpsolver.problems.LinearProgram;
 import scpsolver.util.SparseVector;
 
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -78,6 +77,11 @@ public class GLPKSolver implements LPSolver {
 	}
 
 	@Override
+	public boolean supportsRedundancyChecking() {
+		return true;
+	}
+
+	@Override
 	public Result solve() {
 		LinearProgram lp = new LinearProgram(this.objective);
 		if(this.ub != null) {
@@ -93,23 +97,38 @@ public class GLPKSolver implements LPSolver {
 		}
 		this.inequalities.forEach(lp::addConstraint);
 		lp.setMinProblem(this.operation.isMin());
+
+		// Prevent GLPK from writing to console
+		PrintStream original = System.out;
+		PrintStream dummyStream = new PrintStream(new OutputStream(){
+			@Override
+			public void write(int b) {
+				//NO-OP
+			}
+		});
+
 		LinearProgramSolver solver = SolverFactory.newDefault();
-		double[] values = solver.solve(lp);
-		if(values == null) {
-			boolean allZero = true;
-			for(double d : this.objective) {
-				allZero = allZero && d == 0;
-			}
-			if(!allZero) {
-				double[] newObjective = new double[this.objective.length];
-				lp.setC(new SparseVector(newObjective));
-				if(solver.solve(lp) != null) {
-					return new UnboundedResult(this.operation);
+		try {
+			System.setOut(dummyStream);
+			double[] values = solver.solve(lp);
+			if(values == null) {
+				boolean allZero = true;
+				for(double d : this.objective) {
+					allZero = allZero && d == 0;
 				}
+				if(!allZero) {
+					double[] newObjective = new double[this.objective.length];
+					lp.setC(new SparseVector(newObjective));
+					if(solver.solve(lp) != null) {
+						return new UnboundedResult(this.operation);
+					}
+				}
+				return new InfeasibleResult(this.operation);
+			} else {
+				return new SimpleResult(values, lp.evaluate(values) + this.constant);
 			}
-			return new InfeasibleResult(this.operation);
-		} else {
-			return new SimpleResult(values, lp.evaluate(values) + this.constant);
+		} finally {
+			System.setOut(original);
 		}
 	}
 }

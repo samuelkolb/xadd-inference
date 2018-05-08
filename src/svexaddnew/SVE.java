@@ -9,6 +9,7 @@
  */
 package svexaddnew;
 
+import diagram.ResolveIntegration;
 import graph.Graph;
 
 import java.io.FileOutputStream;
@@ -206,7 +207,7 @@ public class SVE {
             xadd_marginal = _context.apply(restrict_high, restrict_low, XADD.SUM);
         } else {
             // Integrate out continuous variable
-            xadd_marginal = _context.computeDefiniteIntegral(f._xadd, var);
+            xadd_marginal = integrate(_context, f._xadd, var);
         }
         return _gm.new Factor(xadd_marginal);
     }
@@ -214,7 +215,7 @@ public class SVE {
     private Factor normalize(Factor f) {
         int xadd_norm = f._xadd;
         for (String var : f._vars)
-            xadd_norm = _context.computeDefiniteIntegral(xadd_norm, var);
+            xadd_norm = integrate(_context, xadd_norm, var);
         double norm = _context.evaluate(xadd_norm, EMPTY_BOOL, EMPTY_DOUBLE);
         xadd_norm = _context.scalarOp(f._xadd, 1d / norm, XADD.PROD);
         return _gm.new Factor(xadd_norm);
@@ -228,8 +229,14 @@ public class SVE {
         int xadd_norm = f._xadd;
         int xadd_var = f._localContext.getTermNode(new VarExpr(var));
         int xadd_prod = f._localContext.apply(xadd_norm, xadd_var, XADD.PROD);
-        int result = f._localContext.computeDefiniteIntegral(xadd_prod, var);
+        // int result = f._localContext.computeDefiniteIntegral(xadd_prod, var);
+        int result = integrate(f._localContext, xadd_prod, var);
         return f._localContext.evaluate(result, EMPTY_BOOL, EMPTY_DOUBLE);
+    }
+
+    public static int integrate(XADD context, int xadd, String var) {
+        // return context.computeDefiniteIntegral(xadd, var);
+        return new ResolveIntegration(context).integrate(xadd, var, "real");
     }
 
     // ////////////////////////////////////////////////////////////////////////////////
@@ -405,21 +412,22 @@ public class SVE {
     }
 
     public static void TestRadar() {
+        // TODO /Users/samuelkolb/Documents/PhD/xadd-inference/src/svexaddnew/radar.gm
 
-        GraphicalModel gm = new GraphicalModel("./src/sve/radar.gm");
+        GraphicalModel gm = new GraphicalModel("/Users/samuelkolb/Documents/PhD/xadd-inference/src/svexaddnew/radar.gm");
         SVE sve = new SVE(gm);
         // Query q = new Query("./src/sve/radar.query.1");
         // gm.instantiateGMTemplate(q._hmVar2Expansion);
         // System.out.println(gm);
         
-        Query q1 = new Query("./src/sve/radar.query.5");
+        Query q1 = new Query("/Users/samuelkolb/Documents/PhD/xadd-inference/src/svexaddnew/radar.query.5");
         Factor result1 = sve.infer(q1, CreateRadarVariableOrder(q1));
 
-        Query q2 = new Query("./src/sve/radar.query.4");
+        Query q2 = new Query("/Users/samuelkolb/Documents/PhD/xadd-inference/src/svexaddnew/radar.query.4");
         Factor result2 = sve.infer(q2, CreateRadarVariableOrder(q2));
 
         if (true) {
-            sve.Export3DData(result2, result1, "./src/sve/radar.query.6");
+            sve.Export3DData(result2, result1, "/Users/samuelkolb/Documents/PhD/xadd-inference/src/svexaddnew/radar.query.6");
         }
     }
 

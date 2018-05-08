@@ -11,26 +11,17 @@
 
 package xadd;
 
+import logic.kb.prop.PropKbCNF;
+import solving.LPSolver;
+import util.MapList;
+import xadd.ExprLib.ArithExpr;
+import xadd.ExprLib.CompExpr;
+import xadd.XADD.*;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-
-import logic.kb.prop.PropKbCNF;
-import lpsolve.LP;
-import lpsolve.LpSolve;
-
-import solving.GLPKSolver;
-import solving.LPSolver;
-import util.MapList;
-import xadd.ExprLib.ArithExpr;
-import xadd.XADD.BoolDec;
-import xadd.ExprLib.CompExpr;
-import xadd.XADD.Decision;
-import xadd.XADD.ExprDec;
-import xadd.XADD.XADDNode;
-import xadd.XADD.XADDTNode;
-import xadd.XADD.XADDINode;
 
 
 public class ReduceLPContext {
@@ -476,7 +467,7 @@ public class ReduceLPContext {
             int nvars = nLocalCVars;
             double[] obj_coef = new double[nvars]; // default all zeros, which is
             // what we want
-            LPSolver solver = new GLPKSolver();
+            LPSolver solver = LPSolver.getDefault();
             solver.maximize();
             solver.setObjective(obj_coef, 0);
             solver.setLowerBound(assign2Local(context.lowerBounds, true));
@@ -661,7 +652,7 @@ public class ReduceLPContext {
 
             // Setup LP
             for (int i = 0; i < nvars; i++) obj_coef[i] = 1;
-            LPSolver solver = new GLPKSolver();
+            LPSolver solver = LPSolver.getDefault();
             solver.maximize();
             solver.setObjective(obj_coef, 0);
             solver.setLowerBound(assign2Local(context.lowerBounds, true));
@@ -685,7 +676,7 @@ public class ReduceLPContext {
             }
             //lp.free();
 
-            if (infeasible || SKIP_TEST2) return infeasible;
+            if (infeasible || SKIP_TEST2 || !solver.supportsRedundancyChecking()) return infeasible;
 
             //Test 2 - strict feasibility
             // for each constraint c + f*x > 0 the slack is the greatest value S>0 s.t. c + f*x - S >= 0
@@ -705,7 +696,7 @@ public class ReduceLPContext {
             upper2[nvars] = XADD.DEFAULT_UPPER_BOUND;
 
             //LP lp2 = new LP(nvars + 1, lower2, upper2, objCoef2, LP.MAXIMIZE);
-            LPSolver solver2 = new GLPKSolver();
+            LPSolver solver2 = LPSolver.getDefault();
             solver2.maximize();
             solver2.setLowerBound(lower2);
             solver2.setUpperBound(upper2);

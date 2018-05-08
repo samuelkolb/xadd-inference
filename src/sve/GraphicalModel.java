@@ -5,6 +5,7 @@
  */
 package sve;
 
+import diagram.OrderedXADD;
 import graph.Graph;
 
 import java.util.*;
@@ -55,7 +56,8 @@ public class GraphicalModel {
 
     public void instantiateGMTemplate(HashMap<String, ArrayList<Integer>> var2expansion) {
 
-        _context = new XADD();
+        _context = new OrderedXADD(Arrays.asList("o_1", "o_2", "o_3", "o_i", "o_i'", "b_1", "b_2", "b_3", "b_i", "b_i'", "x_1", "x_2", "x_3", "x_i", "x_i'"), false);
+        // _context = new XADD();
         _alFactors = new ArrayList<Factor>();
         _hsVariables = new HashSet<String>();
 

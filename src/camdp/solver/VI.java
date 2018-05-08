@@ -275,11 +275,23 @@ public class VI extends CAMDPsolver {
         Integer result = null;
         if ((result = mdp._hmContRegrCache.get(_contRegrKey)) != null)
             return result;
-        
+
+        context.showGraph(q, "Q before");
+        context.showGraph(dd_conditional_sub, "conditional sub before");
+
         // Perform regression via delta function substitution
         q = context.reduceProcessXADDLeaf(dd_conditional_sub, 
                 context.new DeltaFunctionSubstitution(var, q), true);
-        
+
+        context.showGraph(q, "Q after");
+        try {
+            Thread.sleep(1000000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.exit(0);
+
+
         // Cache result
         mdp._hmContRegrCache.put(new IntTriple(_contRegrKey), q);
         

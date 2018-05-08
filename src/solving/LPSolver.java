@@ -54,6 +54,27 @@ public interface LPSolver {
 		public String toString() {
 			return Arrays.toString(getVariables()) + ": " + getValue();
 		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+
+			SimpleResult that = (SimpleResult) o;
+
+			if (Double.compare(that.value, value) != 0) return false;
+			return Arrays.equals(variables, that.variables);
+		}
+
+		@Override
+		public int hashCode() {
+			int result;
+			long temp;
+			result = Arrays.hashCode(variables);
+			temp = Double.doubleToLongBits(value);
+			result = 31 * result + (int) (temp ^ (temp >>> 32));
+			return result;
+		}
 	}
 
 	class InfeasibleResult implements Result {
@@ -86,6 +107,26 @@ public interface LPSolver {
 		public boolean isUnbounded() {
 			return false;
 		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+
+			InfeasibleResult that = (InfeasibleResult) o;
+
+			return maximize == that.maximize;
+		}
+
+		@Override
+		public int hashCode() {
+			return (maximize ? 1 : 0);
+		}
+
+		@Override
+		public String toString() {
+			return "Infeasible solution (" + (maximize ? "MAX" : "MIN") + ")";
+		}
 	}
 
 	class UnboundedResult implements Result {
@@ -117,6 +158,26 @@ public interface LPSolver {
 		@Override
 		public boolean isUnbounded() {
 			return true;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+
+			UnboundedResult that = (UnboundedResult) o;
+
+			return maximize == that.maximize;
+		}
+
+		@Override
+		public int hashCode() {
+			return (maximize ? 1 : 0);
+		}
+
+		@Override
+		public String toString() {
+			return "Unbounded result (" + (maximize ? "MAX" : "MIN") + ")";
 		}
 	}
 
@@ -177,8 +238,19 @@ public interface LPSolver {
 	void integer(int index);
 
 	/**
+	 * Returns if the solver supports redundancy checking
+	 * @return True iff the solver supports redundancy checking (with slack checks)
+	 */
+	boolean supportsRedundancyChecking();
+
+	/**
 	 * Solves the LP and returns the optimal solution
 	 * @return	The optimal values for the decision variables
 	 */
 	Result solve();
+
+	static LPSolver getDefault() {
+		return new GurobiSolver();
+		// return new TestingSolver(Arrays.asList(new GLPKSolver(), new GurobiSolver()));
+	}
 }

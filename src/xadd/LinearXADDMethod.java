@@ -11,30 +11,16 @@
 
 package xadd;
 
+import diagram.Assignment;
+import solving.LPSolver;
+import solving.Solver;
+import xadd.ExprLib.*;
+import xadd.XADD.*;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-
-import diagram.Assignment;
-import lpsolve.LP;
-import lpsolve.LpSolve;
-
-import solving.GLPKSolver;
-import solving.LPSolver;
-import solving.Solver;
-import xadd.ExprLib.ArithExpr;
-import xadd.ExprLib.ArithOperation;
-import xadd.ExprLib.CompOperation;
-import xadd.ExprLib.OperExpr;
-import xadd.ExprLib.CompExpr;
-import xadd.XADD.Decision;
-import xadd.ExprLib.DoubleExpr;
-import xadd.XADD.ExprDec;
-import xadd.ExprLib.VarExpr;
-import xadd.XADD.XADDINode;
-import xadd.XADD.XADDNode;
-import xadd.XADD.XADDTNode;
 
 public class LinearXADDMethod {
 
@@ -380,7 +366,7 @@ public class LinearXADDMethod {
 
     protected OptimResult restrictedMax(double f[], double c, HashSet<Integer> domain, boolean isMax) {
         int nvars = nLocalCVars;
-        LPSolver solver = new GLPKSolver();
+        LPSolver solver = LPSolver.getDefault();
         if(isMax) {
             solver.maximize();
         } else {
